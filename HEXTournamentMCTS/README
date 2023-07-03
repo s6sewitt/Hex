@@ -1,3 +1,6 @@
+Copyright of Prof. Eckhard v. Toerne, University of Bonn
+
+
 This project depends on ROOT. On the cip pool cluster ROOT is available through
 module load root/6.14.04
 to placate memory leak errors in address sanitizer also set form the command line
