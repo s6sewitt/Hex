@@ -1,0 +1,52 @@
+This project depends on ROOT. On the cip pool cluster ROOT is available through
+module load root/6.14.04
+to placate memory leak errors in address sanitizer also set form the command line
+export ASAN_OPTIONS=detect_leaks=0
+both lines are included in file setup.sh. 
+
+Instructions for participation in the Hex Tournament
+You should start out by creating a framework for your own game engine
+Execute from the command line:
+source CreateEngine.sh YourEngineName
+
+YourEngineName is the name of the engine, no spaces are allowed
+The scrip creates a cxx and a header file within its own namespace
+please keep everything you add within your own namespace.
+
+Except for the files you created do not try to modify the provided files.
+You are allowed to add more files and more classes if you like, if they are located in this directory. Also: do not modify the makefile.
+
+Your engine inherits from IHexEngine which defines both the interface 
+to the tournament program and serves as your base class.
+HexPosition and IHexEngine contain many useful routines, please have a look, (especially HexPosition::Get/AddNeighbors and CheckForWin, GetDistance.
+
+You yourself need to fill two functions in the derived class, GetNextMove and GetName
+Please note that the base class stores always the last move in fLastMove.
+and your engine will have no problems keeping track of the game.
+
+You may ADD new classes, but please enclose them in your namespace
+
+How to run your engine:
+
+How to let the engine play against a human:
+
+edit runHex.cxx 
+-- include your header file
+-- add your engine instead of the SimpleHexEngine
+   use its full name: YourNAMESPACE::YourHexEngine
+
+How to test the engine in tournament style, engine versus engine:
+edit runTournament.cxx and tournament.h
+-- make the same changes as for runHex.cxx
+
+Each participant should equip their project with a jpg or bitmap image (square-size) that contains the logo of your HexEngine. This logo will be displayed when your engine plays matches in the tournament. 
+
+Time limit:
+The time limit per move is 1.0 seconds CPU time per move as specified in Hexboard::fTimeLimitPerMove
+
+The tournament will be played with regular hex on board sizes 9 though 13.
+
+Good luck!
+Eckhard v. Toerne
+
+

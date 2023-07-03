@@ -1,0 +1,191 @@
+#define BOOST_TEST_DYN_LINK 
+#define BOOST_TEST_MODULE HexTournament
+#define DO_UNIT_TEST
+#include <boost/test/unit_test.hpp> 
+#include "TApplication.h"
+#include "HexLocation.h"
+#include "HexPosition.h"
+#include "HexBoard.h"
+#include "HexTournament.h"
+#include "IHexEngine.h"
+#include "SimpleHexEngine.h"
+
+BOOST_AUTO_TEST_CASE(hexlocation) {
+   BOOST_CHECK(HexLocation(0,0)<HexLocation(1,1));
+   BOOST_CHECK(HexLocation(0,0)<HexLocation(0,1));
+   BOOST_CHECK(HexLocation(0,0)<HexLocation(1,0));
+   BOOST_CHECK(HexLocation(0,1)<HexLocation(1,0));
+   BOOST_CHECK(HexLocation(0,1)==HexLocation(0,1));
+   BOOST_CHECK(HexLocation(0,1)!=HexLocation(1,0));
+   BOOST_CHECK(HexLocation(0,1)!=HexLocation(1,1));
+   BOOST_CHECK(HexLocation(0,1)!=HexLocation(0,0));
+}
+
+BOOST_AUTO_TEST_CASE(hexposition) {
+   HexPosition p(3);
+   BOOST_CHECK(p.IsValidLoc(0,0));
+   BOOST_CHECK(p.IsValidLoc(2,2));
+   BOOST_CHECK(!p.IsValidLoc(3,0));
+   BOOST_CHECK(!p.IsValidLoc(0,3));
+   BOOST_CHECK(!p.IsValidLoc(3,3));
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),vertical));
+   BOOST_CHECK(!p.AddMove(HexLocation(1,1),horizontal));//same move twice does not work
+   BOOST_CHECK(!p.AddMove(HexLocation(1,1),vertical));//same move twice does not work
+   BOOST_CHECK(p.AddMove(HexLocation(0,0),horizontal));
+   BOOST_CHECK(p.AddMove(HexLocation(2,0),vertical));
+   BOOST_CHECK(!p.AddMove(HexLocation(0,0),horizontal)); //same move twice does not work
+   BOOST_CHECK_EQUAL(p.Typ(HexLocation(2,0)),vertical);   
+   BOOST_CHECK_EQUAL(p.Typ(HexLocation(0,0)),horizontal); 
+   BOOST_CHECK_EQUAL(p.Typ(HexLocation(1,0)),none);
+   p.Reset();
+   BOOST_CHECK_EQUAL(p.Typ(HexLocation(2,0)),none);   
+}
+
+BOOST_AUTO_TEST_CASE(getneighbors)
+{
+   HexPosition p(2);
+   //    (0,1)(1,1)
+   // (0,0)(1,0)
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,0),none).size(),2);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,0),none).size(),3); 
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,1),none).size(),3);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,1),none).size(),2);  
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),vertical));
+   //    (0,1)(1,1)
+   // (0,0)(VRT)    taken by "vertical"
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,1),vertical).size(),1);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,1),horizontal).size(),0);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,1),none).size(),1);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,0),none).size(),1); 
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,1),none).size(),2); 
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,0),none).size(),3); 
+   HexLocSet nei;
+   p.AddNeighbors(HexLocation(0,1),vertical, nei);
+   BOOST_CHECK_EQUAL(nei.size(),1); 
+   p.AddNeighbors(HexLocation(0,1),vertical, nei);
+   BOOST_CHECK_EQUAL(nei.size(),1);  
+}
+BOOST_AUTO_TEST_CASE(getneighbors2)
+{
+   HexPosition p(5);
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(2,2),none).size(),6);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(2,2),horizontal).size(),0);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(2,2),vertical).size(),0);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,0),none).size(),2);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(2,0),none).size(),4);  
+}
+
+BOOST_AUTO_TEST_CASE(hexposition2)
+{
+   //    (0,1)(1,1)
+   // (0,0)(1,0)
+   HexPosition p(2);
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),vertical));
+   BOOST_CHECK_EQUAL(p.FirstMover(),vertical);
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(0,1),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),vertical);
+}
+BOOST_AUTO_TEST_CASE(hexposition2b)
+{ 
+   //    (0,1)(1,1)
+   // (0,0)(1,0)
+   HexPosition p(2);
+   BOOST_CHECK(p.AddMove(HexLocation(0,0),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(0,1),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),horizontal);
+}
+BOOST_AUTO_TEST_CASE(hexposition3)
+{
+   //       (0,2)(1,2)(2,2)
+   //    (0,1)(1,1)(2,1)
+   // (0,0)(1,0)(2,0)
+   HexPosition p(3);
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,2),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(0,2),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(2,0),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),vertical));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),vertical);
+}
+BOOST_AUTO_TEST_CASE(hexposition_withbarrier)
+{
+   //
+   //       (0,2)(1,2)(2,2)
+   //    (0,1)(1,1)(2,1)
+   // (0,0)(1,0)B(2,0)       Barrier between (1,0)-(2,0)
+   HexPosition p(3);
+   p.SetBarrier(HexLocation(1,0),HexLocation(2,0));
+   BOOST_CHECK(p.HasBarrier());
+   HexLocSet nei;
+   p.AddNeighbors(HexLocation(1,0),none, nei);
+   BOOST_CHECK_EQUAL(nei.size(),3);  
+
+   BOOST_CHECK(p.AddMove(HexLocation(0,0),horizontal));
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),horizontal));
+   BOOST_CHECK(p.AddMove(HexLocation(2,0),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),horizontal);
+}
+
+BOOST_AUTO_TEST_CASE(hexposition_withbarrier2)
+{
+   //
+   //       (0,2)(1,2)(2,2)
+   //         BBB             Barrier between (0,2)-(1,1)
+   //    (0,1)(1,1)(2,1)
+   // (0,0)(1,0)(2,0)       
+   HexPosition p(3);
+   p.SetBarrier(HexLocation(0,2),HexLocation(1,1));
+   BOOST_CHECK(p.HasBarrier());
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,2),none).size(),2);  
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(1,1),none).size(),5);
+   BOOST_CHECK(p.AddMove(HexLocation(0,2),horizontal));
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),horizontal));
+   BOOST_CHECK(p.AddMove(HexLocation(2,0),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none);
+   BOOST_CHECK(p.AddMove(HexLocation(0,1),horizontal));
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),horizontal);
+   BOOST_CHECK_EQUAL(p.GetNeighbors(HexLocation(0,1),horizontal).size(),2);
+}
+
+BOOST_AUTO_TEST_CASE(checkspecialbarrierrule)
+{ 
+   //    (0,1)B(1,1)    Barrier between (0,1)-(1,1)
+   // (0,0) (1,0)
+   HexPosition p(2);
+   p.SetBarrier(HexLocation(0,1),HexLocation(1,1));
+   BOOST_CHECK_EQUAL(p.NFree(),4);
+   BOOST_CHECK(p.AddMove(HexLocation(0,1),horizontal));
+   //    (HOR)B(1,1)    A bad first move
+   // (0,0) (1,0)
+   BOOST_CHECK_EQUAL(p.FirstMover(),horizontal);
+   BOOST_CHECK(p.AddMove(HexLocation(1,0),vertical));
+   //    (HOR)B(1,1)    
+   // (0,0) (VRT)
+   BOOST_CHECK(p.AddMove(HexLocation(1,1),horizontal));
+   //    (HOR)B(HOR)  win hindered by barrier    
+   // (0,0) (VRT)
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),none); 
+   BOOST_CHECK(p.AddMove(HexLocation(0,0),vertical));
+   //    (HOR)B(HOR)  horizontal win hindered by barrier    
+   // (VRT) (VRT)
+   BOOST_CHECK_EQUAL(p.NFree(),0);
+   BOOST_CHECK_EQUAL(p.IsWonPosition(),vertical); 
+   // vertical win by special rule that resolves ties in Barrierhex, 
+   // the secondmover wins if all fields taken without a normal win. 
+   // See also README
+ 
+}

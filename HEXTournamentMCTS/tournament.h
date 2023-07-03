@@ -1,0 +1,2 @@
+//case 0: HexTournament<SimpleNAMESPACE::SimpleHexEngine,BulldozerNAMESPACE::BulldozerHexEngine> tour0;tour0(drawBoard);break;
+case 0: HexTournament<MarvinNAMESPACE::MarvinHexEngine,BulldozerNAMESPACE::BulldozerHexEngine> tour0;tour0(drawBoard);break;
